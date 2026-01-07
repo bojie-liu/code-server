@@ -118,7 +118,7 @@ jobs:
           VERSION: ${{ env.VERSION }}
         run: npm run package $PKG_ARCH
 
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
           draft: true
           discussion_category_name: "📣 Announcements"
@@ -179,7 +179,7 @@ jobs:
           VERSION: ${{ env.VERSION }}
         run: npm run package
 
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
           draft: true
           discussion_category_name: "📣 Announcements"
@@ -240,7 +240,7 @@ jobs:
           VERSION: ${{ env.VERSION }}
         run: npm run package
 
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
           draft: true
           discussion_category_name: "📣 Announcements"
@@ -257,7 +257,7 @@ jobs:
         with:
           name: npm-release-package
 
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
           draft: true
           discussion_category_name: "📣 Announcements"
