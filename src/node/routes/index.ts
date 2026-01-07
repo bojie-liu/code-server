@@ -22,6 +22,7 @@ import * as health from "./health"
 import * as login from "./login"
 import * as logout from "./logout"
 import * as pathProxy from "./pathProxy"
+import * as project from "./project"
 import * as update from "./update"
 import * as vscode from "./vscode"
 
@@ -160,6 +161,7 @@ export const register = async (
   }
 
   app.router.use("/update", update.router)
+  app.router.use("/project", project.router)
 
   // For historic reasons we also load at /vscode because the root was replaced
   // by a plugin in v1 of Coder.  The plugin system (which was for internal use
