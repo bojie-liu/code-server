@@ -72,6 +72,7 @@ async function loadVSCode(req: express.Request): Promise<IVSCodeServerAPI> {
     // set to 1.63) but we have always included them.
     compatibility: "1.64",
     "without-connection-token": true,
+    "disable-workspace-trust": true,
   })
 }
 
@@ -244,6 +245,7 @@ router.all(/.*/, ensureAuthenticated, ensureVSCodeLoaded, async (req, res) => {
 
 const socketProxyProvider = new SocketProxyProvider()
 wsRouter.ws(/.*/, ensureOrigin, ensureAuthenticated, ensureVSCodeLoaded, async (req: WebsocketRequest) => {
+  console.log("josh wsRouter.ws ", req.originalUrl, req.socket.remotePort, req.socket.localPort)
   const wrappedSocket = await socketProxyProvider.createProxy(req.ws)
   // This should actually accept a duplex stream but it seems Code has not
   // been updated to match the Node 16 types so cast for now.  There does not

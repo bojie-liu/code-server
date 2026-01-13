@@ -12,12 +12,12 @@ const execAsync = promisify(exec)
 
 export const router = Router()
 
-const VALID_TEMPLATES = ["basic-html", "vite-vanilla", "vite-vue", "vite-react"]
+const VALID_FRAMEWORKS = ["basic-html", "vite-vanilla", "vite-vue", "vite-react"]
 const PROJECTS_DIR = path.join(paths.data, "projects")
 
 interface InitProjectRequest {
   projectId: string
-  template: string
+  framework: string
   filePath?: string // unused, kept for API compatibility
 }
 
@@ -40,25 +40,44 @@ async function copyRecursive(src: string, dest: string): Promise<void> {
 }
 
 /**
+ * OPTIONS /project/init
+ * Handle CORS preflight requests
+ */
+router.options("/init", (_req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  res.setHeader("Access-Control-Allow-Credentials", "true")
+  res.status(204).send()
+})
+
+/**
  * POST /project/init
- * Initialize a new project from a template with git repository
+ * Initialize a new project from a framework template with git repository
  */
 router.post("/init", ensureAuthenticated, async (req, res) => {
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  res.setHeader("Access-Control-Allow-Credentials", "true")
+
   try {
-    const { projectId, template } = req.body as InitProjectRequest
+    const { projectId, framework } = req.body as InitProjectRequest
 
     // Validation
     if (!projectId || typeof projectId !== "string" || projectId.trim() === "") {
       throw new HttpError("projectId is required and must be a non-empty string", HttpCode.BadRequest)
     }
 
-    if (!template || !VALID_TEMPLATES.includes(template)) {
-      throw new HttpError(`template must be one of: ${VALID_TEMPLATES.join(", ")}`, HttpCode.BadRequest)
+    if (!framework || !VALID_FRAMEWORKS.includes(framework)) {
+      throw new HttpError(`framework must be one of: ${VALID_FRAMEWORKS.join(", ")}`, HttpCode.BadRequest)
     }
 
     // Sanitize projectId (alphanumeric, hyphens, underscores only)
     const sanitizedId = projectId.replace(/[^a-zA-Z0-9-_]/g, "-")
     const projectPath = path.join(PROJECTS_DIR, sanitizedId)
+    console.log("Initializing project at", projectPath)
 
     // Check if project already exists
     try {
@@ -75,14 +94,14 @@ router.post("/init", ensureAuthenticated, async (req, res) => {
     // Create project directory
     await fs.mkdir(projectPath)
 
-    // Copy template files
-    const templatePath = path.join(rootPath, "src/browser/templates", template)
+    // Copy framework template files
+    const frameworkPath = path.join(rootPath, "src/browser/frameworks", framework)
     try {
-      await copyRecursive(templatePath, projectPath)
+      await copyRecursive(frameworkPath, projectPath)
     } catch (err: any) {
-      // Clean up project directory if template copy fails
+      // Clean up project directory if framework template copy fails
       await fs.rm(projectPath, { recursive: true, force: true })
-      throw new HttpError(`Template '${template}' not found or failed to copy: ${err.message}`, HttpCode.ServerError)
+      throw new HttpError(`Framework '${framework}' not found or failed to copy: ${err.message}`, HttpCode.ServerError)
     }
 
     // Initialize git repository
@@ -101,7 +120,7 @@ router.post("/init", ensureAuthenticated, async (req, res) => {
       success: true,
       projectId: sanitizedId,
       projectPath,
-      template,
+      framework,
     })
   } catch (err: any) {
     if (err instanceof HttpError) {

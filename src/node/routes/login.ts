@@ -59,6 +59,12 @@ const limiter = new RateLimiter()
 export const router = Router()
 
 router.use(async (req, res, next) => {
+  // Set CORS headers for all login routes
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  res.setHeader("Access-Control-Allow-Credentials", "true")
+
   const to = (typeof req.query.to === "string" && req.query.to) || "/"
   if (await authenticated(req)) {
     return redirect(req, res, to, { to: undefined })
@@ -66,13 +72,18 @@ router.use(async (req, res, next) => {
   next()
 })
 
+router.options("/", (_req, res) => {
+  res.status(204).send()
+})
+
 router.get("/", async (req, res) => {
   res.send(await getRoot(req))
 })
 
-router.post<{}, string, { password?: string; base?: string } | undefined, { to?: string }>("/", async (req, res) => {
+router.post<{}, string | { success: boolean; message: string }, { password?: string; base?: string, shouldRedirect?: boolean } | undefined, { to?: string }>("/", async (req, res) => {
   const password = sanitizeString(req.body?.password)
   const hashedPasswordFromArgs = req.args["hashed-password"]
+  const shouldRedirect = req.body?.shouldRedirect !== false // Default to true
 
   try {
     // Check to see if they exceeded their login attempts
@@ -97,8 +108,13 @@ router.post<{}, string, { password?: string; base?: string } | undefined, { to?:
       // obfuscation purposes (and as a side effect it handles escaping).
       res.cookie(CookieKeys.Session, hashedPassword, getCookieOptions(req))
 
-      const to = (typeof req.query.to === "string" && req.query.to) || "/"
-      return redirect(req, res, to, { to: undefined })
+      if (shouldRedirect) {
+        const to = (typeof req.query.to === "string" && req.query.to) || "/"
+        redirect(req, res, to, { to: undefined })
+      } else {
+        res.json({ success: true, message: "Login successful" })
+      }
+      return
     }
 
     // Note: successful logins should not count against the RateLimiter
