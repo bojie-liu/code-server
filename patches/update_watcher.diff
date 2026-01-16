@@ -1,0 +1,39 @@
+Index: code-server/lib/vscode/extensions/package.json
+===================================================================
+--- code-server.orig/lib/vscode/extensions/package.json
++++ code-server/lib/vscode/extensions/package.json
+@@ -10,7 +10,7 @@
+     "postinstall": "node ./postinstall.mjs"
+   },
+   "devDependencies": {
+-    "@parcel/watcher": "parcel-bundler/watcher#1ca032aa8339260a8a3bcf825c3a1a71e3e43542",
++    "@parcel/watcher": "^2.5.4",
+     "esbuild": "0.25.0",
+     "vscode-grammar-updater": "^1.1.0"
+   },
+Index: code-server/lib/vscode/package.json
+===================================================================
+--- code-server.orig/lib/vscode/package.json
++++ code-server/lib/vscode/package.json
+@@ -74,7 +74,7 @@
+   "dependencies": {
+     "@microsoft/1ds-core-js": "^3.2.13",
+     "@microsoft/1ds-post-js": "^3.2.13",
+-    "@parcel/watcher": "parcel-bundler/watcher#1ca032aa8339260a8a3bcf825c3a1a71e3e43542",
++    "@parcel/watcher": "^2.5.4",
+     "@types/semver": "^7.5.8",
+     "@vscode/deviceid": "^0.1.1",
+     "@vscode/iconv-lite-umd": "0.7.1",
+Index: code-server/lib/vscode/remote/package.json
+===================================================================
+--- code-server.orig/lib/vscode/remote/package.json
++++ code-server/lib/vscode/remote/package.json
+@@ -5,7 +5,7 @@
+   "dependencies": {
+     "@microsoft/1ds-core-js": "^3.2.13",
+     "@microsoft/1ds-post-js": "^3.2.13",
+-    "@parcel/watcher": "parcel-bundler/watcher#1ca032aa8339260a8a3bcf825c3a1a71e3e43542",
++    "@parcel/watcher": "^2.5.4",
+     "@vscode/deviceid": "^0.1.1",
+     "@vscode/iconv-lite-umd": "0.7.1",
+     "@vscode/proxy-agent": "^0.36.0",
