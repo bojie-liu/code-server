@@ -1,0 +1,13 @@
+Index: code-server/lib/vscode/build/lib/fetch.ts
+===================================================================
+--- code-server.orig/lib/vscode/build/lib/fetch.ts
++++ code-server/lib/vscode/build/lib/fetch.ts
+@@ -50,7 +50,7 @@ export async function fetchUrl(url: stri
+ 			startTime = new Date().getTime();
+ 		}
+ 		const controller = new AbortController();
+-		const timeout = setTimeout(() => controller.abort(), 30 * 1000);
++		const timeout = setTimeout(() => controller.abort(), 10 * 30 * 1000);
+ 		try {
+ 			const response = await fetch(url, {
+ 				...options.nodeFetchOptions,
