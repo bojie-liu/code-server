@@ -65,6 +65,11 @@ router.use(async (req, res, next) => {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
   res.setHeader("Access-Control-Allow-Credentials", "true")
 
+  // Skip authentication check for OPTIONS requests (CORS preflight)
+  if (req.method === "OPTIONS") {
+    return next()
+  }
+
   const to = (typeof req.query.to === "string" && req.query.to) || "/"
   if (await authenticated(req)) {
     return redirect(req, res, to, { to: undefined })

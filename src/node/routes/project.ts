@@ -11,6 +11,23 @@ const execAsync = promisify(exec)
 
 export const router = Router()
 
+// Middleware to handle CORS for all project routes
+router.use((req, res, next) => {
+  // Set CORS headers for all routes
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  res.setHeader("Access-Control-Allow-Credentials", "true")
+
+  // Handle OPTIONS requests immediately (CORS preflight)
+  if (req.method === "OPTIONS") {
+    res.status(204).send()
+    return
+  }
+
+  next()
+})
+
 const VALID_FRAMEWORKS = ["basic-html", "vite-vanilla", "vite-vue", "vite-react"]
 const PROJECTS_DIR = path.join(paths.data, "projects")
 const SCAFFOLDING_REPO_URL = process.env.SCAFFOLDING_REPO_URL || "git@github.com:bojie-liu/ai-hub-scaffolding-app.git"
@@ -31,28 +48,10 @@ interface DeployProjectRequest {
 }
 
 /**
- * OPTIONS /project/init
- * Handle CORS preflight requests
- */
-router.options("/init", (_req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
-  res.status(204).send()
-})
-
-/**
  * POST /project/init
  * Initialize a new project from a framework template with git repository
  */
 router.post("/init", ensureAuthenticated, async (req, res) => {
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
-
   try {
     const { projectId, framework } = req.body as InitProjectRequest
 
@@ -126,28 +125,10 @@ router.post("/init", ensureAuthenticated, async (req, res) => {
 })
 
 /**
- * OPTIONS /project/save
- * Handle CORS preflight requests
- */
-router.options("/save", (_req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
-  res.status(204).send()
-})
-
-/**
  * POST /project/save
  * Save project by committing all changes and optionally tagging with a version
  */
 router.post("/save", ensureAuthenticated, async (req, res) => {
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
-
   try {
     const { projectId } = req.body as SaveProjectRequest
 
@@ -219,28 +200,10 @@ router.post("/save", ensureAuthenticated, async (req, res) => {
 })
 
 /**
- * OPTIONS /project/deploy
- * Handle CORS preflight requests
- */
-router.options("/deploy", (_req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
-  res.status(204).send()
-})
-
-/**
  * POST /project/deploy
  * Deploy project by committing all changes, tagging with a version, and pushing to remote
  */
 router.post("/deploy", ensureAuthenticated, async (req, res) => {
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
-  res.setHeader("Access-Control-Allow-Credentials", "true")
-
   try {
     const { projectId, version } = req.body as DeployProjectRequest
 
