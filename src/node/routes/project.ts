@@ -16,7 +16,7 @@ router.use((req, res, next) => {
   // Set CORS headers for all routes
   res.setHeader("Access-Control-Allow-Origin", "https://localhost:3000")
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Code-Server-Session")
   res.setHeader("Access-Control-Allow-Credentials", "true")
 
   // Handle OPTIONS requests immediately (CORS preflight)
