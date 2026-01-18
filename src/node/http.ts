@@ -121,11 +121,16 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
     }
     case AuthType.Password: {
       // The password is stored in the cookie after being hashed.
+      // For cross-origin requests, check the header first, then fall back to cookie
+      const sessionFromHeader = req.headers["x-code-server-session"]
+      const sessionFromCookie = req.cookies[CookieKeys.Session]
+      const sessionKey = sessionFromHeader || sessionFromCookie
+
       const hashedPasswordFromArgs = req.args["hashed-password"]
       const passwordMethod = getPasswordMethod(hashedPasswordFromArgs)
       const isCookieValidArgs: IsCookieValidArgs = {
         passwordMethod,
-        cookieKey: sanitizeString(req.cookies[CookieKeys.Session]),
+        cookieKey: sanitizeString(sessionKey),
         passwordFromArgs: req.args.password || "",
         hashedPasswordFromArgs: req.args["hashed-password"],
       }
