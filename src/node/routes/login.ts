@@ -60,7 +60,7 @@ export const router = Router()
 
 router.use(async (req, res, next) => {
   // Set CORS headers for all login routes
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
+  res.setHeader("Access-Control-Allow-Origin", "https://localhost:3000")
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
   res.setHeader("Access-Control-Allow-Credentials", "true")
@@ -85,10 +85,17 @@ router.get("/", async (req, res) => {
   res.send(await getRoot(req))
 })
 
-router.post<{}, string | { success: boolean; message: string }, { password?: string; base?: string, shouldRedirect?: boolean } | undefined, { to?: string }>("/", async (req, res) => {
+router.post<
+  {},
+  string | { success: boolean; message: string; [CookieKeys.Session]?: string },
+  { password?: string; base?: string; shouldRedirect?: boolean } | undefined,
+  { to?: string }
+>("/", async (req, res) => {
   const password = sanitizeString(req.body?.password)
   const hashedPasswordFromArgs = req.args["hashed-password"]
   const shouldRedirect = req.body?.shouldRedirect !== false // Default to true
+
+  console.log("josh liu debug: login POST called", req.host, req.url)
 
   try {
     // Check to see if they exceeded their login attempts
@@ -117,7 +124,7 @@ router.post<{}, string | { success: boolean; message: string }, { password?: str
         const to = (typeof req.query.to === "string" && req.query.to) || "/"
         redirect(req, res, to, { to: undefined })
       } else {
-        res.json({ success: true, message: "Login successful" })
+        res.json({ success: true, message: "Login successful", [CookieKeys.Session]: hashedPassword })
       }
       return
     }

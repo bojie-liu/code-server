@@ -40,14 +40,6 @@ if ! KEEP_MODULES=1 npm run release; then
   return 1 2>/dev/null || exit 1
 fi
 
-echo "==> Entering release directory..."
-if ! cd release; then
-  echo "Error: Failed to enter release directory"
-  return 1 2>/dev/null || exit 1
-fi
-
-echo "==> Skipping npm install (keeping node_modules from build)"
-
 echo "==> Building standalone release..."
 if ! npm run release:standalone; then
   echo "Error: Failed to build standalone release"

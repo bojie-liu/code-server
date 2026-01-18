@@ -114,6 +114,7 @@ export const ensureAuthenticated = async (
  * Return true if authenticated via cookies.
  */
 export const authenticated = async (req: express.Request): Promise<boolean> => {
+  console.log("josh liu debug: http.authenticated called", req.url, req.args, req.cookies[CookieKeys.Session])
   switch (req.args.auth) {
     case AuthType.None: {
       return true
@@ -316,10 +317,20 @@ export const getCookieOptions = (req: express.Request): express.CookieOptions =>
     req.query.base || req.body?.base || "/",
     req.query.href || req.body?.href || "http://" + (req.headers.host || "localhost"),
   )
+
+  // Check if this is a cross-origin request (e.g., from localhost:3000 to production domain)
+  const origin = req.headers.origin
+  const host = req.headers.host
+  const isCrossOrigin = origin && new URL(origin).host !== host
+
   return {
     domain: getCookieDomain(url.host, req.args["proxy-domain"]),
     path: normalize(url.pathname) || "/",
-    sameSite: "lax",
+    // For cross-origin requests, use SameSite=None with Secure=true
+    // For same-origin requests, use SameSite=lax for better security
+    sameSite: isCrossOrigin ? "none" : "lax",
+    // Secure must be true when SameSite=None (requires HTTPS)
+    secure: isCrossOrigin ? true : url.protocol === "https:",
   }
 }
 
