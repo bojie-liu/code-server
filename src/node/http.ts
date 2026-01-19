@@ -120,10 +120,18 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
     }
     case AuthType.Password: {
       // The password is stored in the cookie after being hashed.
-      // For cross-origin requests, check the header first, then fall back to cookie
-      const sessionFromHeader = req.headers["x-code-server-session"]
-      const sessionFromCookie = req.cookies[CookieKeys.Session]
-      const sessionKey = sessionFromHeader || sessionFromCookie
+      // For POST requests, check header; for GET requests, check URL parameter
+      let sessionKey: string | undefined
+      if (req.method === "POST") {
+        sessionKey = req.headers["x-code-server-session"] as string | undefined
+      } else if (req.method === "GET") {
+        sessionKey = req.query["x-code-server-session"] as string | undefined
+      }
+
+      // Fall back to cookie if not found
+      if (!sessionKey) {
+        sessionKey = req.cookies[CookieKeys.Session]
+      }
 
       const hashedPasswordFromArgs = req.args["hashed-password"]
       const passwordMethod = getPasswordMethod(hashedPasswordFromArgs)
@@ -322,19 +330,12 @@ export const getCookieOptions = (req: express.Request): express.CookieOptions =>
     req.query.href || req.body?.href || "http://" + (req.headers.host || "localhost"),
   )
 
-  // Check if this is a cross-origin request (e.g., from localhost:3000 to production domain)
-  const origin = req.headers.origin
-  const host = req.headers.host
-  const isCrossOrigin = origin && new URL(origin).host !== host
-
   return {
     domain: getCookieDomain(url.host, req.args["proxy-domain"]),
     path: normalize(url.pathname) || "/",
     // For cross-origin requests, use SameSite=None with Secure=true
     // For same-origin requests, use SameSite=lax for better security
-    sameSite: isCrossOrigin ? "none" : "lax",
-    // Secure must be true when SameSite=None (requires HTTPS)
-    secure: isCrossOrigin ? true : url.protocol === "https:",
+    sameSite: "lax",
   }
 }
 
