@@ -145,6 +145,7 @@ router.post<
 
     throw new Error(i18n.t("INCORRECT_PASSWORD") as string)
   } catch (error: any) {
+    console.log("josh liu debug: login error", error)
     const renderedHtml = await getRoot(req, error)
     res.send(renderedHtml)
   }
