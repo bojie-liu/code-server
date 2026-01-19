@@ -95,7 +95,7 @@ router.post<
   const hashedPasswordFromArgs = req.args["hashed-password"]
   const shouldRedirect = req.body?.shouldRedirect !== false // Default to true
 
-  console.log("josh liu debug: login POST called", req.host, req.url)
+  console.log("josh liu debug: login POST called", req.host, req.url, shouldRedirect, req.body)
 
   try {
     // Check to see if they exceeded their login attempts

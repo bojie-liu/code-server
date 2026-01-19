@@ -114,7 +114,6 @@ export const ensureAuthenticated = async (
  * Return true if authenticated via cookies.
  */
 export const authenticated = async (req: express.Request): Promise<boolean> => {
-  console.log("josh liu debug: http.authenticated called", req.url, req.args, req.cookies[CookieKeys.Session])
   switch (req.args.auth) {
     case AuthType.None: {
       return true
