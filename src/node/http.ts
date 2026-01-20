@@ -150,6 +150,16 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
         sessionKey = req.cookies[CookieKeys.Session]
       }
 
+      // Fall back to extracting from Referer header if still not found
+      if (!sessionKey && req.headers.referer) {
+        try {
+          const refererUrl = new URL(req.headers.referer)
+          sessionKey = refererUrl.searchParams.get("x-code-server-session") || undefined
+        } catch (error) {
+          // Invalid referer URL, continue without extracting session
+        }
+      }
+
       const hashedPasswordFromArgs = req.args["hashed-password"]
       const passwordMethod = getPasswordMethod(hashedPasswordFromArgs)
       const isCookieValidArgs: IsCookieValidArgs = {
