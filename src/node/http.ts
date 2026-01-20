@@ -119,6 +119,20 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
       return true
     }
     case AuthType.Password: {
+      // Check if the request origin is trusted - if so, skip password validation
+      const originRaw = req.headers.origin
+      if (originRaw) {
+        try {
+          const origin = new URL(originRaw).host.trim().toLowerCase()
+          const trustedOrigins = req.args["trusted-origins"] || []
+          if (trustedOrigins.includes(origin) || trustedOrigins.includes("*")) {
+            return true
+          }
+        } catch (error) {
+          // Invalid origin format, continue with normal authentication
+        }
+      }
+
       // The password is stored in the cookie after being hashed.
       // For POST requests, check header; for GET requests, check URL parameter
       let sessionKey: string | undefined
