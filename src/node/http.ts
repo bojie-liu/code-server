@@ -120,12 +120,15 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
     }
     case AuthType.Password: {
       // Check if the request origin is trusted - if so, skip password validation
-      const originRaw = req.headers.origin
+      const originRaw = req.headers.origin || req.headers.referer
+      console.log("josh req.headers debug:", req.headers) // --- IGNORE ---
       if (originRaw) {
         try {
           const origin = new URL(originRaw).host.trim().toLowerCase()
           const trustedOrigins = req.args["trusted-origins"] || []
-          if (trustedOrigins.includes(origin) || trustedOrigins.includes("*")) {
+          const host = getHost(req)
+          console.log("josh liu debug: origin", origin, trustedOrigins.includes(origin), originRaw)
+          if (trustedOrigins.includes(origin) || trustedOrigins.includes("*") || origin === host) {
             return true
           }
         } catch (error) {
@@ -142,14 +145,10 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
         sessionKey = req.query["x-code-server-session"] as string | undefined
       }
 
-      console.log("josh liu debug: sessionKey from request", req.path, sessionKey)
-
       // Fall back to cookie if not found
       if (!sessionKey) {
         sessionKey = req.cookies[CookieKeys.Session]
       }
-
-      console.log("josh liu debug: sessionKey after fallback to cookie", sessionKey)
 
       const hashedPasswordFromArgs = req.args["hashed-password"]
       const passwordMethod = getPasswordMethod(hashedPasswordFromArgs)
@@ -159,13 +158,6 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
         passwordFromArgs: req.args.password || "",
         hashedPasswordFromArgs: req.args["hashed-password"],
       }
-
-      console.log(
-        "josh liu debug: isCookieValidArgs",
-        isCookieValidArgs,
-        sanitizeString(sessionKey),
-        hashedPasswordFromArgs,
-      )
 
       return await isCookieValid(isCookieValidArgs)
     }
