@@ -128,10 +128,14 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
         sessionKey = req.query["x-code-server-session"] as string | undefined
       }
 
+      console.log("josh liu debug: sessionKey from request", req.path, sessionKey)
+
       // Fall back to cookie if not found
       if (!sessionKey) {
         sessionKey = req.cookies[CookieKeys.Session]
       }
+
+      console.log("josh liu debug: sessionKey after fallback to cookie", sessionKey)
 
       const hashedPasswordFromArgs = req.args["hashed-password"]
       const passwordMethod = getPasswordMethod(hashedPasswordFromArgs)
@@ -141,6 +145,13 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
         passwordFromArgs: req.args.password || "",
         hashedPasswordFromArgs: req.args["hashed-password"],
       }
+
+      console.log(
+        "josh liu debug: isCookieValidArgs",
+        isCookieValidArgs,
+        sanitizeString(sessionKey),
+        hashedPasswordFromArgs,
+      )
 
       return await isCookieValid(isCookieValidArgs)
     }
