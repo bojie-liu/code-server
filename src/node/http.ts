@@ -121,7 +121,6 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
     case AuthType.Password: {
       // Check if the request origin is trusted - if so, skip password validation
       const originRaw = req.headers.origin || req.headers.referer
-      console.log("josh req.headers debug:", req.headers) // --- IGNORE ---
       if (originRaw) {
         try {
           const origin = new URL(originRaw).host.trim().toLowerCase()

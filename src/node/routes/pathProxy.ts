@@ -61,15 +61,20 @@ export async function wsProxy(
     proxyBasePath?: string
   },
 ): Promise<void> {
+  console.log('josh 1')
   ensureProxyEnabled(req)
+  console.log('josh 2')
   ensureOrigin(req)
+  console.log('josh 3')
   await ensureAuthenticated(req)
+  console.log('josh 4')
 
   // The base is used for rewriting (redirects, target).
   if (!opts?.passthroughPath) {
     ;(req as any).base = req.path.split(path.sep).slice(0, 3).join(path.sep)
   }
 
+  console.log('josh 5', getProxyTarget(req, opts))
   _proxy.ws(req, req.ws, req.head, {
     ignorePath: true,
     target: getProxyTarget(req, opts),
