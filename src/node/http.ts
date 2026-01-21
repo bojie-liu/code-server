@@ -403,6 +403,7 @@ export function authenticateOrigin(req: express.Request): void {
     return
   }
 
+  console.log("josh originRaw debug:", originRaw) // --- IGNORE ---
   let origin: string
   try {
     origin = new URL(originRaw).host.trim().toLowerCase()
@@ -411,6 +412,7 @@ export function authenticateOrigin(req: express.Request): void {
   }
 
   const trustedOrigins = req.args["trusted-origins"] || []
+  console.log("josh trustedOrigins debug:", trustedOrigins, trustedOrigins.includes(origin)) // --- IGNORE ---
   if (trustedOrigins.includes(origin) || trustedOrigins.includes("*")) {
     return
   }
