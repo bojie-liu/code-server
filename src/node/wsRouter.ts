@@ -15,6 +15,7 @@ interface InternalWebsocketRequest extends WebsocketRequest {
 
 export const handleUpgrade = (app: express.Express, server: http.Server): void => {
   server.on("upgrade", (req, socket, head) => {
+    console.log("josh handleUpgrade ", req.url, req.socket.remotePort, req.socket.localPort)
     socket.pause()
 
     const wreq = req as InternalWebsocketRequest
