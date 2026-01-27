@@ -109,9 +109,11 @@ export const register = async (
   app.wsRouter.use("/", domainProxy.wsRouter.router)
 
   app.router.all("/proxy/:port{/*path}", async (req, res) => {
+    console.log("josh liu debug: /proxy/:port{/*path} hit", req.url) // --- IGNORE ---
     await pathProxy.proxy(req, res)
   })
   app.wsRouter.get("/proxy/:port{/*path}", async (req) => {
+    console.log("josh liu debug: ws /proxy/:port{/*path} hit", req.url) // --- IGNORE ---
     await pathProxy.wsProxy(req as unknown as WebsocketRequest)
   })
   // These two routes pass through the path directly.

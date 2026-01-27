@@ -119,12 +119,51 @@ export const authenticated = async (req: express.Request): Promise<boolean> => {
       return true
     }
     case AuthType.Password: {
+      // Check if the request origin is trusted - if so, skip password validation
+      const originRaw = req.headers.origin || req.headers.referer
+      if (originRaw) {
+        try {
+          const origin = new URL(originRaw).host.trim().toLowerCase()
+          const trustedOrigins = req.args["trusted-origins"] || []
+          const host = getHost(req)
+          console.log("josh liu debug: origin", origin, trustedOrigins.includes(origin), originRaw)
+          if (trustedOrigins.includes(origin) || trustedOrigins.includes("*") || origin === host) {
+            return true
+          }
+        } catch (error) {
+          // Invalid origin format, continue with normal authentication
+        }
+      }
+
       // The password is stored in the cookie after being hashed.
+      // For POST requests, check header; for GET requests, check URL parameter
+      let sessionKey: string | undefined
+      if (req.method === "POST") {
+        sessionKey = req.headers["x-code-server-session"] as string | undefined
+      } else if (req.method === "GET") {
+        sessionKey = req.query["x-code-server-session"] as string | undefined
+      }
+
+      // Fall back to cookie if not found
+      if (!sessionKey) {
+        sessionKey = req.cookies[CookieKeys.Session]
+      }
+
+      // Fall back to extracting from Referer header if still not found
+      if (!sessionKey && req.headers.referer) {
+        try {
+          const refererUrl = new URL(req.headers.referer)
+          sessionKey = refererUrl.searchParams.get("x-code-server-session") || undefined
+        } catch (error) {
+          // Invalid referer URL, continue without extracting session
+        }
+      }
+
       const hashedPasswordFromArgs = req.args["hashed-password"]
       const passwordMethod = getPasswordMethod(hashedPasswordFromArgs)
       const isCookieValidArgs: IsCookieValidArgs = {
         passwordMethod,
-        cookieKey: sanitizeString(req.cookies[CookieKeys.Session]),
+        cookieKey: sanitizeString(sessionKey),
         passwordFromArgs: req.args.password || "",
         hashedPasswordFromArgs: req.args["hashed-password"],
       }
@@ -361,6 +400,7 @@ export function authenticateOrigin(req: express.Request): void {
     return
   }
 
+  console.log("josh originRaw debug:", originRaw) // --- IGNORE ---
   let origin: string
   try {
     origin = new URL(originRaw).host.trim().toLowerCase()
@@ -369,6 +409,7 @@ export function authenticateOrigin(req: express.Request): void {
   }
 
   const trustedOrigins = req.args["trusted-origins"] || []
+  console.log("josh trustedOrigins debug:", trustedOrigins, trustedOrigins.includes(origin)) // --- IGNORE ---
   if (trustedOrigins.includes(origin) || trustedOrigins.includes("*")) {
     return
   }
