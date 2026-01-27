@@ -1,0 +1,84 @@
+Index: code-server/lib/vscode/src/server-main.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/server-main.ts
++++ code-server/lib/vscode/src/server-main.ts
+@@ -47,6 +47,7 @@ const shouldSpawnCli = parsedArgs.help |
+ 
+ const nlsConfiguration = await resolveNLSConfiguration({ userLocale: 'en', osLocale: 'en', commit: product.commit, userDataPath: '', nlsMetadataPath: import.meta.dirname });
+ 
++console.log('josh shouldSpawnCli', shouldSpawnCli);
+ if (shouldSpawnCli) {
+ 	loadCode(nlsConfiguration).then((mod) => {
+ 		mod.spawnCli();
+@@ -116,6 +117,7 @@ if (shouldSpawnCli) {
+ 			? { path: sanitizeStringArg(parsedArgs['socket-path']) }
+ 			: { host, port: await parsePort(host, sanitizeStringArg(parsedArgs['port'])) }
+ 	);
++	console.log('josh -------------- nodeListenOptions', nodeListenOptions);
+ 	server.listen(nodeListenOptions, async () => {
+ 		let output = Array.isArray(product.serverGreeting) && product.serverGreeting.length ? `\n\n${product.serverGreeting.join('\n')}\n\n` : ``;
+ 
+@@ -138,6 +140,7 @@ if (shouldSpawnCli) {
+ 		output += `Server bound to ${typeof address === 'string' ? address : `${address.address}:${address.port} (${address.family})`}\n`;
+ 		// Do not change this line. VS Code looks for this in the output.
+ 		output += `Extension host agent listening on ${typeof address === 'string' ? address : address.port}\n`;
++		console.log('josh' + output);
+ 
+ 		perf.mark('code/server/started');
+ 		(globalThis as { vscodeServerListenTime?: number }).vscodeServerListenTime = performance.now();
+Index: code-server/lib/vscode/src/vs/platform/remote/browser/browserSocketFactory.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/platform/remote/browser/browserSocketFactory.ts
++++ code-server/lib/vscode/src/vs/platform/remote/browser/browserSocketFactory.ts
+@@ -280,6 +280,7 @@ export class BrowserSocketFactory implem
+ 	}
+ 
+ 	connect({ host, port }: WebSocketRemoteConnection, path: string, query: string, debugLabel: string): Promise<ISocket> {
++		console.log('josh BrowserSocketFactory connect ', host, port, path, query, debugLabel);
+ 		return new Promise<ISocket>((resolve, reject) => {
+ 			const webSocketSchema = (/^https:/.test(mainWindow.location.href) ? 'wss' : 'ws');
+ 			path = (mainWindow.location.pathname + "/" + path).replace(/\/\/+/g, "/")
+Index: code-server/lib/vscode/src/vs/server/node/remoteExtensionHostAgentServer.ts
+===================================================================
+--- code-server.orig/lib/vscode/src/vs/server/node/remoteExtensionHostAgentServer.ts
++++ code-server/lib/vscode/src/vs/server/node/remoteExtensionHostAgentServer.ts
+@@ -191,6 +191,7 @@ class RemoteExtensionHostAgentServer ext
+ 	}
+ 
+ 	public handleUpgrade(req: http.IncomingMessage, socket: net.Socket) {
++		console.log('josh handleUpgrade ' , new Error().stack, socket.remotePort, socket.localPort);
+ 		let reconnectionToken = generateUuid();
+ 		let isReconnection = false;
+ 		let skipWebSocketFrames = false;
+@@ -235,6 +236,7 @@ class RemoteExtensionHostAgentServer ext
+ 		} else {
+ 			_socket = socket.socket.socket;
+ 		}
++		console.log('josh _getRemoteAddress ', _socket.localPort, _socket.remotePort);
+ 		return _socket.remoteAddress || `<unknown>`;
+ 	}
+ 
+@@ -258,6 +260,7 @@ class RemoteExtensionHostAgentServer ext
+ 	 */
+ 	private _handleWebSocketConnection(socket: NodeSocket | WebSocketNodeSocket, isReconnection: boolean, reconnectionToken: string): void {
+ 		const remoteAddress = this._getRemoteAddress(socket);
++		console.log('josh _handleWebSocketConnection ', new Error().stack, remoteAddress);
+ 		const logPrefix = `[${remoteAddress}][${reconnectionToken.substr(0, 8)}]`;
+ 		const protocol = new PersistentProtocol({ socket });
+ 
+@@ -383,6 +386,7 @@ class RemoteExtensionHostAgentServer ext
+ 	}
+ 
+ 	private async _handleConnectionType(remoteAddress: string, _logPrefix: string, protocol: PersistentProtocol, socket: NodeSocket | WebSocketNodeSocket, isReconnection: boolean, reconnectionToken: string, msg: ConnectionTypeRequest): Promise<void> {
++		console.log('josh _handleConnectionType startParams', remoteAddress);
+ 		const logPrefix = (
+ 			msg.desiredConnectionType === ConnectionType.Management
+ 				? `${_logPrefix}[ManagementConnection]`
+@@ -675,6 +679,7 @@ export async function createServer(addre
+ 	});
+ 
+ 	const disposables = new DisposableStore();
++	console.log('josh here - before setupServerServices');
+ 	const { socketServer, instantiationService } = await setupServerServices(connectionToken, args, REMOTE_DATA_FOLDER, disposables);
+ 
+ 	// Set the unexpected error handler after the services have been initialized, to avoid having

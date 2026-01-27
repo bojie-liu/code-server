@@ -24,3 +24,4 @@ trusted-domains.diff
 signature-verification.diff
 fetch.diff
 update_watcher.diff
+josh-log.diff
