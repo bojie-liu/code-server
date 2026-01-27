@@ -524,6 +524,10 @@ export interface DefaultedArgs extends ConfigArgs {
 export async function setDefaults(cliArgs: UserProvidedArgs, configArgs?: ConfigArgs): Promise<DefaultedArgs> {
   const args = Object.assign({}, configArgs || {}, cliArgs)
 
+  if (!args["trusted-origins"]) {
+    args["trusted-origins"] = ["localhost:8080", "localhost:3000", "www.aihub-eduhk.xyz"]
+  }
+
   if (!args["user-data-dir"]) {
     args["user-data-dir"] = paths.data
   }
