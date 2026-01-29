@@ -28,7 +28,7 @@ router.use((req, res, next) => {
   next()
 })
 
-const VALID_FRAMEWORKS = ["basic-html", "vite-vanilla", "vite-vue", "vite-react"]
+const VALID_FRAMEWORKS = ["basic-html", "vite-vanilla", "vite-vue", "vite-react", "nextjs"]
 const PROJECTS_DIR = path.join(paths.data, "projects")
 const SCAFFOLDING_REPO_URL = process.env.SCAFFOLDING_REPO_URL || "git@github.com:bojie-liu/ai-hub-scaffolding-app.git"
 
@@ -94,7 +94,7 @@ router.post("/init", ensureAuthenticated, async (req, res) => {
     // Clone scaffolding repository
     try {
       console.log(`Cloning repository from ${SCAFFOLDING_REPO_URL} to ${projectPath}`)
-      await execAsync(`git clone ${SCAFFOLDING_REPO_URL} "${projectPath}"`)
+      await execAsync(`git clone ${SCAFFOLDING_REPO_URL} -b ${framework} "${projectPath}"`)
     } catch (err: any) {
       // Clean up project directory if git clone fails
       await fs.rm(projectPath, { recursive: true, force: true })
