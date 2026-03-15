@@ -1,6 +1,8 @@
 import { exec } from "child_process"
 import { Router } from "express"
 import { promises as fs } from "fs"
+import * as net from "net"
+import * as os from "os"
 import * as path from "path"
 import { promisify } from "util"
 import { HttpCode, HttpError } from "../../common/http"
@@ -45,6 +47,11 @@ interface SaveProjectRequest {
 interface DeployProjectRequest {
   projectId: string
   version: string
+}
+
+interface ExecuteCommandRequest {
+  projectId: string
+  commandJson: string
 }
 
 /**
@@ -301,5 +308,106 @@ router.post("/deploy", ensureAuthenticated, async (req, res) => {
       throw err
     }
     throw new HttpError(`Failed to deploy project: ${err.message}`, HttpCode.ServerError)
+  }
+})
+
+/**
+ * POST /project/executeCommand
+ * Execute a VSCode command by connecting to the Unix socket server
+ */
+router.post("/executeCommand", ensureAuthenticated, async (req, res) => {
+  try {
+    const { projectId, commandJson } = req.body as ExecuteCommandRequest
+
+    // Validation
+    if (!projectId || typeof projectId !== "string" || projectId.trim() === "") {
+      throw new HttpError("projectId is required and must be a non-empty string", HttpCode.BadRequest)
+    }
+
+    if (!commandJson || typeof commandJson !== "string") {
+      throw new HttpError("commandJson is required and must be a string", HttpCode.BadRequest)
+    }
+
+    // Validate that commandJson is valid JSON
+    let commandData: any
+    try {
+      commandData = JSON.parse(commandJson)
+    } catch (err: any) {
+      throw new HttpError("commandJson must be valid JSON", HttpCode.BadRequest)
+    }
+
+    // Construct Unix socket path based on projectId
+    const tmpDir = os.tmpdir()
+    const socketPath = path.join(tmpDir, `vscode-${projectId}.sock`)
+    console.log(`Executing command for project '${projectId}' on socket '${socketPath}' with data:`, commandData)
+
+    // Check if socket file exists
+    let socketExists = false
+    try {
+      await fs.access(socketPath)
+      socketExists = true
+    } catch (err: any) {
+      socketExists = false
+    }
+
+    // Handle special "ping" command
+    if (commandData.command === "ping") {
+      if (socketExists) {
+        res.json({ status: "ok", message: "pong" })
+      } else {
+        res.status(503).json({
+          error: `Server is still setting up for project '${projectId}'. Please retry.`,
+          retryable: true,
+        })
+      }
+      return
+    }
+
+    // For non-ping commands, socket must exist
+    if (!socketExists) {
+      throw new HttpError(`Server is still setting up for project '${projectId}'. Please retry.`, HttpCode.ServerError)
+    }
+
+    // Connect to Unix socket and send command
+    const response = await new Promise<string>((resolve, reject) => {
+      const client = net.createConnection({ path: socketPath }, () => {
+        console.log(`Connected to Unix socket: ${socketPath}`)
+        client.write(commandJson)
+      })
+
+      let responseData = ""
+
+      client.on("data", (data) => {
+        responseData += data.toString()
+      })
+
+      client.on("end", () => {
+        console.log("Disconnected from Unix socket")
+        resolve(responseData)
+      })
+
+      client.on("error", (err) => {
+        console.error("Socket error:", err)
+        reject(new HttpError(`Failed to connect to Unix socket: ${err.message}`, HttpCode.ServerError))
+      })
+
+      // Set timeout for socket connection
+      client.setTimeout(5000, () => {
+        client.destroy()
+        reject(new HttpError("Socket connection timeout", HttpCode.ServerError))
+      })
+    })
+
+    res.json({
+      success: true,
+      projectId: projectId,
+      command: commandData,
+      response: response || null,
+    })
+  } catch (err: any) {
+    if (err instanceof HttpError) {
+      throw err
+    }
+    throw new HttpError(`Failed to execute command: ${err.message}`, HttpCode.ServerError)
   }
 })
