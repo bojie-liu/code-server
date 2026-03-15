@@ -4,6 +4,20 @@
 # Usage: ./package.sh [version]
 # Example: ./package.sh 4.9.1 or ./package.sh 1.95.3.25227
 
+# Check Node.js version
+REQUIRED_NODE_VERSION="22.21.1"
+CURRENT_NODE_VERSION=$(node --version | sed 's/v//')
+
+if [ "$CURRENT_NODE_VERSION" != "$REQUIRED_NODE_VERSION" ]; then
+  echo "Error: Node.js version $REQUIRED_NODE_VERSION is required"
+  echo "Current version: $CURRENT_NODE_VERSION"
+  echo "Please install Node.js $REQUIRED_NODE_VERSION before running this script"
+  return 1 2>/dev/null || exit 1
+fi
+
+echo "==> Node.js version check passed: $CURRENT_NODE_VERSION"
+echo ""
+
 VERSION="${1:-0.0.0}"
 
 # Validate version format (X.Y.Z or X.Y.Z.W)
