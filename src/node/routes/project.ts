@@ -11,6 +11,9 @@ import { paths } from "../util"
 
 const execAsync = promisify(exec)
 
+// Cache for socket connections by projectId
+const clientCache = new Map<string, net.Socket>()
+
 export const router = Router()
 
 // Middleware to handle CORS for all project routes
@@ -93,10 +96,10 @@ router.post("/init", ensureAuthenticated, async (req, res) => {
       if (err.code !== "ENOENT") throw err
     }
 
-    console.log('josh finish mkdir projects dir');
+    console.log("josh finish mkdir projects dir")
     // Create projects directory if it doesn't exist
     const result = await fs.mkdir(PROJECTS_DIR, { recursive: true })
-    console.log('josh finish mkdir projects dir success', result);
+    console.log("josh finish mkdir projects dir success", result)
 
     // Clone scaffolding repository
     try {
@@ -370,32 +373,93 @@ router.post("/executeCommand", ensureAuthenticated, async (req, res) => {
 
     // Connect to Unix socket and send command
     const response = await new Promise<string>((resolve, reject) => {
-      const client = net.createConnection({ path: socketPath }, () => {
-        console.log(`Connected to Unix socket: ${socketPath}`)
-        client.write(commandJson)
-      })
-
+      let client = clientCache.get(projectId)
       let responseData = ""
+      let isResolved = false
 
-      client.on("data", (data) => {
+      const handleResponse = (data: Buffer) => {
         responseData += data.toString()
-      })
 
-      client.on("end", () => {
-        console.log("Disconnected from Unix socket")
-        resolve(responseData)
-      })
+        // Check if we have a complete message (ends with newline)
+        if (responseData.includes("\n")) {
+          // Remove the data listener to prevent further processing
+          client?.removeListener("data", handleResponse)
 
-      client.on("error", (err) => {
-        console.error("Socket error:", err)
-        reject(new HttpError(`Failed to connect to Unix socket: ${err.message}`, HttpCode.ServerError))
-      })
+          // Parse the response (remove the trailing newline)
+          const completeMessage = responseData.trim()
+          if (!isResolved) {
+            isResolved = true
+            resolve(completeMessage)
+          }
+        }
+      }
 
-      // Set timeout for socket connection
-      client.setTimeout(5000, () => {
-        client.destroy()
-        reject(new HttpError("Socket connection timeout", HttpCode.ServerError))
-      })
+      const handleEnd = () => {
+        if (!isResolved) {
+          isResolved = true
+          console.log("Disconnected from Unix socket")
+          resolve(responseData)
+        }
+      }
+
+      const handleError = (err: Error) => {
+        if (!isResolved) {
+          isResolved = true
+          console.error("Socket error:", err)
+          clientCache.delete(projectId)
+          reject(new HttpError(`Failed to connect to Unix socket: ${err.message}`, HttpCode.ServerError))
+        }
+      }
+
+      const handleTimeout = () => {
+        if (!isResolved) {
+          isResolved = true
+          client?.destroy()
+          clientCache.delete(projectId)
+          reject(new HttpError("Socket connection timeout", HttpCode.ServerError))
+        }
+      }
+
+      if (client && !client.destroyed) {
+        // Use existing connection
+        console.log(`Using cached connection for project: ${projectId}`)
+
+        // Set up listeners for this request
+        client.on("data", handleResponse)
+        client.once("end", handleEnd)
+        client.once("error", handleError)
+
+        try {
+          client.write(commandJson + "\n")
+        } catch (err: any) {
+          clientCache.delete(projectId)
+          handleError(err)
+          return
+        }
+      } else {
+        // Create new connection
+        client = net.createConnection({ path: socketPath }, () => {
+          console.log(`Connected to Unix socket: ${socketPath}`)
+          client?.write(commandJson + "\n")
+        })
+
+        // Cache the client
+        clientCache.set(projectId, client)
+
+        // Set up listeners for this request
+        client.on("data", handleResponse)
+        client.once("end", handleEnd)
+        client.once("error", handleError)
+
+        // Clean up cache when connection closes (persistent listener)
+        client.on("close", () => {
+          console.log(`Connection closed for project: ${projectId}`)
+          clientCache.delete(projectId)
+        })
+
+        // Set timeout for socket connection
+        client.setTimeout(5000, handleTimeout)
+      }
     })
 
     res.json({
