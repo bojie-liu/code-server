@@ -20,7 +20,7 @@ export const router = Router()
 router.use((req, res, next) => {
   // Set CORS headers for all routes
   res.setHeader("Access-Control-Allow-Origin", "https://localhost:3000")
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Code-Server-Session")
   res.setHeader("Access-Control-Allow-Credentials", "true")
 
@@ -50,6 +50,16 @@ interface SaveProjectRequest {
 interface DeployProjectRequest {
   projectId: string
   version: string
+}
+
+interface ProjectStatus {
+  name: string
+  phase: "init" | "coding" | "testing" | "deploying" | "complete" | "failed"
+  message: string
+}
+
+interface GetStatusRequest {
+  projectId: string
 }
 
 interface ExecuteCommandRequest {
@@ -311,6 +321,64 @@ router.post("/deploy", ensureAuthenticated, async (req, res) => {
       throw err
     }
     throw new HttpError(`Failed to deploy project: ${err.message}`, HttpCode.ServerError)
+  }
+})
+
+/**
+ * GET /project/status
+ * Read and return project status from project-status.json
+ */
+router.get("/status", ensureAuthenticated, async (req, res) => {
+  try {
+    const { projectId } = req.query as unknown as GetStatusRequest
+
+    if (!projectId || typeof projectId !== "string" || projectId.trim() === "") {
+      throw new HttpError("projectId is required and must be a non-empty string", HttpCode.BadRequest)
+    }
+
+    if (!/^[a-zA-Z0-9-_]+$/.test(projectId)) {
+      throw new HttpError(
+        "projectId must contain only alphanumeric characters, hyphens, and underscores",
+        HttpCode.BadRequest,
+      )
+    }
+
+    const projectPath = path.join(PROJECTS_DIR, projectId)
+
+    try {
+      await fs.access(projectPath)
+    } catch {
+      throw new HttpError(`Project '${projectId}' does not exist`, HttpCode.NotFound)
+    }
+
+    const statusFilePath = path.join(projectPath, "project-status.json")
+    let statusData: ProjectStatus
+    let fileStat
+    try {
+      const raw = await fs.readFile(statusFilePath, "utf-8")
+      statusData = JSON.parse(raw)
+      fileStat = (await fs.stat(statusFilePath)) as any
+    } catch (err: any) {
+      if (err.code === "ENOENT") {
+        throw new HttpError(`project-status.json not found for project '${projectId}'`, HttpCode.NotFound)
+      }
+      throw new HttpError(`Failed to parse project-status.json: ${err.message}`, HttpCode.ServerError)
+    }
+
+    res.json({
+      success: true,
+      projectId,
+      name: statusData.name ?? null,
+      phase: statusData.phase ?? null,
+      startedAt: fileStat.birthtime.toISOString(),
+      updatedAt: fileStat.mtime.toISOString(),
+      message: statusData.message ?? null,
+    })
+  } catch (err: any) {
+    if (err instanceof HttpError) {
+      throw err
+    }
+    throw new HttpError(`Failed to get project status: ${err.message}`, HttpCode.ServerError)
   }
 })
 
