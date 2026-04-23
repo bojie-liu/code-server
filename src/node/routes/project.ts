@@ -33,7 +33,6 @@ router.use((req, res, next) => {
   next()
 })
 
-const VALID_FRAMEWORKS = ["basic-html", "vite-vanilla", "vite-vue", "vite-react", "nextjs"]
 const PROJECTS_DIR = path.join(paths.data, "projects")
 const SCAFFOLDING_REPO_URL = process.env.SCAFFOLDING_REPO_URL || "git@github.com:bojie-liu/ai-hub-scaffolding-app.git"
 
@@ -86,10 +85,6 @@ router.post("/init", ensureAuthenticated, async (req, res) => {
         "projectId must contain only alphanumeric characters, hyphens, and underscores",
         HttpCode.BadRequest,
       )
-    }
-
-    if (!framework || !VALID_FRAMEWORKS.includes(framework)) {
-      throw new HttpError(`framework must be one of: ${VALID_FRAMEWORKS.join(", ")}`, HttpCode.BadRequest)
     }
 
     const projectPath = path.join(PROJECTS_DIR, projectId)
