@@ -17,9 +17,14 @@ const clientCache = new Map<string, net.Socket>()
 export const router = Router()
 
 // Middleware to handle CORS for all project routes
+const TRUSTED_ORIGINS = ["https://localhost:3000", "https://agile.eduhk.hk"]
+
 router.use((req, res, next) => {
   // Set CORS headers for all routes
-  res.setHeader("Access-Control-Allow-Origin", "https://localhost:3000")
+  const origin = req.headers.origin
+  if (origin && TRUSTED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin)
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Code-Server-Session")
   res.setHeader("Access-Control-Allow-Credentials", "true")

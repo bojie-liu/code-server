@@ -525,7 +525,7 @@ export async function setDefaults(cliArgs: UserProvidedArgs, configArgs?: Config
   const args = Object.assign({}, configArgs || {}, cliArgs)
 
   if (!args["trusted-origins"]) {
-    args["trusted-origins"] = ["localhost:8080", "localhost:3000", "www.aihub-eduhk.xyz"]
+    args["trusted-origins"] = ["localhost:8080", "localhost:3000", "www.aihub-eduhk.xyz", "agile.eduhk.hk"]
   }
 
   if (!args["user-data-dir"]) {
